@@ -10,6 +10,10 @@ $RDP_PATH = If([string]::IsNullOrWhiteSpace($RDP_PATH_DEFAULT)) { Read-Host "Ins
 $VM_NAME_DEFAULT = "W10-AVANADE"
 $VM_NAME = If([string]::IsNullOrWhiteSpace($VM_NAME_DEFAULT)) { Read-Host "Insert the vm name" } Else { $VM_NAME_DEFAULT }
 $VM_IP = (Get-VM $VM_NAME | Get-VMNetworkAdapter)[0].IPAddresses[0]
+
+If([string]::IsNullOrWhiteSpace($VM_IP)) { 
+    return Write-Host "VM is down" 
+}
 ((Get-Content -Path $RDP_PATH) -Replace 'full address:s:\d.+',"full address:s:$($VM_IP)") | Set-Content -Path $RDP_PATH
 
 $USERNAME_DEFAULT = "Daniele"
