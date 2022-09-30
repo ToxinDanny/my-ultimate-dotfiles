@@ -1,0 +1,9 @@
+---
+rdp:
+    path: ".\\W10-AVANADE.rdp"
+vm:
+    name: "W10-AVANADE"
+    username: "Daniele"
+    ispasswordneeded: "Y"
+    password: "Mawile.123"
+    
