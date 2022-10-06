@@ -1,10 +1,12 @@
 ﻿# Install CM Module If not already
-If ((Get-Module -ListAvailable -Name CredentialManager).Count -lt 0) {
+If ((Get-Module -ListAvailable -Name CredentialManager).Count -lt 0) 
+{
     Install-Module CredentialManager -force -Scope CurrentUser
 }
 
 #Install Yaml module for settings
-If ((Get-Module -ListAvailable -Name powershell-yaml).Count -lt 0) {
+If ((Get-Module -ListAvailable -Name powershell-yaml).Count -lt 0) 
+{
     Install-Module powershell-yaml -force -Scope CurrentUser
 }
 
@@ -17,11 +19,31 @@ $VM_NAME_DEFAULT = $DEFAULTS.VM.Name
 $VM_NAME = If([string]::IsNullOrWhiteSpace($VM_NAME_DEFAULT)) { Read-Host "Insert the vm name" } Else { $VM_NAME_DEFAULT }
 $VM_IP = (Get-VM $VM_NAME | Get-VMNetworkAdapter)[0].IPAddresses[0]
 
-If([string]::IsNullOrWhiteSpace($VM_IP)) { 
-    return Write-Host "VM is down" 
+If([string]::IsNullOrWhiteSpace($VM_IP)) 
+{ 
+    $VM_START = Read-Host "VM is down. Do you want to start it? (Y / N)" 
+    Write-Host $VM_START
+    switch($VM_START) 
+    {
+        "Y"
+        {
+            Start-VM $VM_NAME
+            Write-Host "Vm is starting..."
+            do 
+            {
+                $VM = Get-VM $VM_NAME
+            } while ($VM.Heartbeat -ne 'OkApplicationsUnknown')
+
+            $VM_IP = (Get-VM $VM_NAME | Get-VMNetworkAdapter)[0].IPAddresses[0]
+        }
+
+        "N" { return Read-Host "Cya next time! (Click any key to close)" }
+
+        default { return Read-Host "Invalid input. Click any key to close" }
+    } 
 }
 
-((Get-Content -Path $RDP_PATH) -Replace 'full address:s:\d.+',"full address:s:$($VM_IP)") | Set-Content -Path $RDP_PATH
+((Get-Content -Path $RDP_PATH) -Replace '^full address:s:.*$',"full address:s:$($VM_IP)") | Set-Content -Path $RDP_PATH
 
 $USERNAME_DEFAULT = $DEFAULTS.VM.Username
 $USERNAME = If([string]::IsNullOrWhiteSpace($USERNAME_DEFAULT)) { Read-Host "Insert the username" } Else { $USERNAME_DEFAULT }
@@ -32,10 +54,12 @@ $PASSWORD_DEFAULT = $DEFAULTS.VM.Password
 $PASSWORD = If([string]::IsNullOrWhiteSpace($PASSWORD_DEFAULT) -and $IS_PASSWORD_NEEDED.Equals("Y")) { Read-Host "Insert the password" } Else { $PASSWORD_DEFAULT }
 
 # Set Windows Credentials (and remove old If wrong)
-If((Get-StoredCredential -Target $VM_IP).Count -eq 0) {
+If((Get-StoredCredential -Target $VM_IP).Count -eq 0) 
+{
     $CRED_TO_REMOVE_TARGET = ((Get-StoredCredential -AsCredentialObject | Where-Object {$_.UserName -eq $USERNAME}).TargetName -match 'LegacyGeneric:target=\d.+' -split '=')[1]
 
-    If(![string]::IsNullOrWhiteSpace($CRED_TO_REMOVE_TARGET)) {
+    If(![string]::IsNullOrWhiteSpace($CRED_TO_REMOVE_TARGET)) 
+    {
         Remove-StoredCredential -Target $CRED_TO_REMOVE_TARGET
     }
 
